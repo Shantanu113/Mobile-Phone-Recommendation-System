@@ -2,30 +2,38 @@ import subprocess
 import sys
 import os
 
-# Auto-install all dependencies before anything else loads
-_req_file = os.path.join(os.path.dirname(__file__), "requirements.txt")
-if os.path.exists(_req_file):
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "-r", _req_file, "--quiet"])
+# ── Step 1: Install all dependencies ──────────────────────────────────────────
+print("[STARTUP] Installing dependencies...")
+_base = os.path.dirname(os.path.abspath(__file__))
+subprocess.check_call(
+    [sys.executable, "-m", "pip", "install", "-r",
+     os.path.join(_base, "requirements.txt"), "--quiet",
+     "--break-system-packages"]
+)
+print("[STARTUP] Dependencies installed.")
 
+# ── Step 2: Train models (runs train.py fresh — avoids pickle version issues) ─
+print("[STARTUP] Training model from CSV data...")
+subprocess.check_call([sys.executable, os.path.join(_base, "train.py")],
+                      cwd=_base)
+print("[STARTUP] Training complete.")
+
+# ── Step 3: Load app and serve ────────────────────────────────────────────────
 from flask import Flask, render_template, request, jsonify
 from recommender import recommend, get_brands, get_price_range, get_dataset_stats
 
 app = Flask(__name__)
-
 
 @app.route("/")
 def index():
     brands = get_brands()
     price_min, price_max = get_price_range()
     stats = get_dataset_stats()
-    return render_template(
-        "index.html",
-        brands=brands,
-        price_min=price_min,
-        price_max=price_max,
-        stats=stats,
-    )
-
+    return render_template("index.html",
+                           brands=brands,
+                           price_min=price_min,
+                           price_max=price_max,
+                           stats=stats)
 
 @app.route("/recommend", methods=["POST"])
 def get_recommendations():
@@ -48,19 +56,15 @@ def get_recommendations():
     except Exception as e:
         return jsonify({"success": False, "error": str(e)}), 500
 
-
 @app.route("/api/stats")
 def api_stats():
     return jsonify(get_dataset_stats())
 
-
 @app.route("/api/phones")
 def api_phones():
-    """Return all phones for dataset view."""
     from recommender import DF_RAW
     phones = DF_RAW.to_dict(orient="records")
     return jsonify(phones)
-
 
 if __name__ == "__main__":
     print("Starting Mobile Phone Recommendation System...")
