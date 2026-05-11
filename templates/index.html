@@ -1,0 +1,435 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>📱 Mobile Phone Recommender</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f7fb;
+    --surface: #ffffff;
+    --border: #e4e6ef;
+    --primary: #4F6EF7;
+    --primary-light: #eef1fe;
+    --text: #1a1d2e;
+    --text-muted: #6b7280;
+    --success: #10b981;
+    --success-light: #ecfdf5;
+    --warning: #f59e0b;
+    --warning-light: #fffbeb;
+    --danger: #ef4444;
+    --radius: 12px;
+    --radius-sm: 8px;
+    --shadow: 0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.04);
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+
+  /* NAV */
+  nav { background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; height: 60px; position: sticky; top: 0; z-index: 100; }
+  .nav-brand { font-size: 17px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .nav-brand span { font-size: 22px; }
+  .nav-links { display: flex; gap: 4px; }
+  .nav-link { padding: 6px 14px; border-radius: var(--radius-sm); font-size: 14px; cursor: pointer; border: none; background: none; color: var(--text-muted); font-family: inherit; transition: all .15s; }
+  .nav-link:hover, .nav-link.active { background: var(--primary-light); color: var(--primary); font-weight: 500; }
+
+  /* LAYOUT */
+  .page { display: none; padding: 2rem; max-width: 1200px; margin: 0 auto; }
+  .page.active { display: block; }
+
+  /* STATS GRID */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 12px; margin-bottom: 2rem; }
+  .stat-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); }
+  .stat-card .val { font-size: 26px; font-weight: 600; color: var(--primary); }
+  .stat-card .lbl { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+
+  /* CARD */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; }
+  .card h2 { font-size: 16px; font-weight: 600; margin-bottom: 1.25rem; display: flex; align-items: center; gap: 8px; }
+
+  /* FORM GRID */
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+  .form-section { margin-bottom: 1rem; }
+  .form-section h3 { font-size: 13px; font-weight: 600; color: var(--text-muted); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 12px; padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+  label { font-size: 13px; color: var(--text-muted); display: block; margin-bottom: 4px; margin-top: 10px; }
+  label:first-of-type { margin-top: 0; }
+  select, input[type=number] { width: 100%; padding: 9px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; color: var(--text); background: var(--bg); outline: none; transition: border-color .15s; }
+  select:focus, input[type=number]:focus { border-color: var(--primary); background: white; }
+  .input-row { display: flex; gap: 8px; }
+  .input-row input { flex: 1; }
+  .input-row span { padding: 9px 4px; font-size: 13px; color: var(--text-muted); }
+
+  /* SLIDERS */
+  .slider-group { display: grid; gap: 10px; }
+  .slider-item { display: flex; align-items: center; gap: 10px; }
+  .slider-label { font-size: 13px; color: var(--text-muted); min-width: 120px; }
+  input[type=range] { flex: 1; accent-color: var(--primary); }
+  .slider-val { font-size: 13px; font-weight: 600; min-width: 28px; text-align: right; color: var(--primary); font-family: 'DM Mono', monospace; }
+
+  /* BUTTON */
+  .btn { padding: 10px 24px; border-radius: var(--radius-sm); font-family: inherit; font-size: 14px; font-weight: 500; cursor: pointer; border: none; transition: all .15s; }
+  .btn-primary { background: var(--primary); color: white; }
+  .btn-primary:hover { opacity: .88; transform: translateY(-1px); }
+  .btn-primary:active { transform: translateY(0); }
+  .btn-outline { background: none; border: 1px solid var(--border); color: var(--text); }
+  .btn-outline:hover { background: var(--bg); }
+  .btn-group { display: flex; gap: 10px; margin-top: 1.25rem; }
+
+  /* RESULTS */
+  #results { display: none; }
+  .results-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; }
+  .results-header h2 { font-size: 16px; font-weight: 600; }
+  .results-count { font-size: 13px; color: var(--text-muted); }
+
+  .phone-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 1.25rem; box-shadow: var(--shadow); margin-bottom: 10px; display: flex; gap: 1rem; align-items: flex-start; transition: border-color .2s, box-shadow .2s; }
+  .phone-card:hover { border-color: var(--primary); box-shadow: 0 4px 20px rgba(79,110,247,.08); }
+  .rank-badge { width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex-shrink: 0; }
+  .rank-1 { background: #FFF3C0; color: #92600A; }
+  .rank-2 { background: #E5E7EB; color: #374151; }
+  .rank-3 { background: #FFE8DF; color: #922B21; }
+  .rank-n { background: var(--bg); color: var(--text-muted); }
+  .phone-info { flex: 1; min-width: 0; }
+  .phone-name { font-size: 15px; font-weight: 600; }
+  .phone-brand { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+  .spec-pills { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .pill { font-size: 11px; padding: 3px 10px; border-radius: 20px; background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+  .pill.highlight { background: var(--primary-light); color: var(--primary); border-color: transparent; }
+  .score-row { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-muted); margin-bottom: 4px; }
+  .score-bar { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
+  .score-fill { height: 100%; border-radius: 3px; background: linear-gradient(90deg, var(--primary), #818cf8); transition: width .6s ease; }
+  .price-tag { font-size: 16px; font-weight: 700; color: var(--text); margin-left: auto; padding-left: 1rem; white-space: nowrap; }
+
+  /* DATASET TABLE */
+  .table-wrapper { overflow-x: auto; border-radius: var(--radius-sm); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; }
+  th { background: var(--bg); text-align: left; padding: 10px 14px; border-bottom: 1px solid var(--border); font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: #fafbff; }
+  .os-badge { padding: 2px 8px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+  .ios { background: #f0f0f0; color: #333; }
+  .android { background: #e6f5ec; color: #166534; }
+
+  /* LOADING */
+  .spinner { display: inline-block; width: 18px; height: 18px; border: 2px solid rgba(255,255,255,.4); border-top-color: white; border-radius: 50%; animation: spin .7s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .empty-state { text-align: center; padding: 3rem; color: var(--text-muted); }
+  .empty-state .icon { font-size: 40px; margin-bottom: .75rem; }
+
+  @media (max-width: 640px) { .form-grid { grid-template-columns: 1fr; } .page { padding: 1rem; } }
+</style>
+</head>
+<body>
+
+<nav>
+  <div class="nav-brand"><span>📱</span> Mobile Recommender</div>
+  <div class="nav-links">
+    <button class="nav-link active" onclick="showPage('home')">🎯 Recommend</button>
+    <button class="nav-link" onclick="showPage('dataset')">📊 Dataset</button>
+    <button class="nav-link" onclick="showPage('about')">ℹ️ About</button>
+  </div>
+</nav>
+
+<!-- ================= HOME PAGE ================= -->
+<div id="page-home" class="page active">
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card"><div class="val">{{ stats.total_phones }}</div><div class="lbl">Total phones</div></div>
+    <div class="stat-card"><div class="val">{{ stats.total_brands }}</div><div class="lbl">Brands</div></div>
+    <div class="stat-card"><div class="val">${{ stats.price_min }}</div><div class="lbl">Lowest price</div></div>
+    <div class="stat-card"><div class="val">${{ stats.price_max }}</div><div class="lbl">Highest price</div></div>
+    <div class="stat-card"><div class="val">${{ stats.avg_price }}</div><div class="lbl">Avg price</div></div>
+  </div>
+
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.25rem">
+
+    <!-- LEFT: Filters -->
+    <div>
+      <div class="card">
+        <h2>🔍 Your Preferences</h2>
+
+        <div class="form-section">
+          <h3>Budget & Filters</h3>
+          <label>Price Range (USD)</label>
+          <div class="input-row">
+            <input type="number" id="budget_min" placeholder="Min" value="100" min="0">
+            <span>–</span>
+            <input type="number" id="budget_max" placeholder="Max" value="900" max="5000">
+          </div>
+          <label>Operating System</label>
+          <select id="os_pref">
+            <option value="Any">Any OS</option>
+            <option value="Android">Android</option>
+            <option value="iOS">iOS</option>
+          </select>
+          <label>Preferred Brand</label>
+          <select id="brand_pref">
+            <option value="Any">Any brand</option>
+            {% for brand in brands %}
+            <option value="{{ brand }}">{{ brand }}</option>
+            {% endfor %}
+          </select>
+          <label>Number of Results</label>
+          <select id="top_n">
+            <option value="3">Top 3</option>
+            <option value="5" selected>Top 5</option>
+            <option value="10">Top 10</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>⚙️ Feature Priorities</h2>
+        <p style="font-size:13px;color:var(--text-muted);margin-bottom:1rem">Drag sliders to set how much each feature matters to you (0 = don't care, 5 = very important)</p>
+        <div class="slider-group">
+          <div class="slider-item">
+            <span class="slider-label">📷 Main Camera</span>
+            <input type="range" id="camera_w" min="0" max="5" value="3" step="1" oninput="updateSlider(this,'camera_val')">
+            <span class="slider-val" id="camera_val">3</span>
+          </div>
+          <div class="slider-item">
+            <span class="slider-label">🤳 Selfie Camera</span>
+            <input type="range" id="selfie_w" min="0" max="5" value="2" step="1" oninput="updateSlider(this,'selfie_val')">
+            <span class="slider-val" id="selfie_val">2</span>
+          </div>
+          <div class="slider-item">
+            <span class="slider-label">🔋 Battery Life</span>
+            <input type="range" id="battery_w" min="0" max="5" value="3" step="1" oninput="updateSlider(this,'battery_val')">
+            <span class="slider-val" id="battery_val">3</span>
+          </div>
+          <div class="slider-item">
+            <span class="slider-label">💾 RAM</span>
+            <input type="range" id="ram_w" min="0" max="5" value="3" step="1" oninput="updateSlider(this,'ram_val')">
+            <span class="slider-val" id="ram_val">3</span>
+          </div>
+          <div class="slider-item">
+            <span class="slider-label">⚡ Performance</span>
+            <input type="range" id="performance_w" min="0" max="5" value="3" step="1" oninput="updateSlider(this,'perf_val')">
+            <span class="slider-val" id="perf_val">3</span>
+          </div>
+          <div class="slider-item">
+            <span class="slider-label">💽 Storage</span>
+            <input type="range" id="storage_w" min="0" max="5" value="2" step="1" oninput="updateSlider(this,'storage_val')">
+            <span class="slider-val" id="storage_val">2</span>
+          </div>
+        </div>
+        <div class="btn-group">
+          <button class="btn btn-primary" onclick="getRecommendations()" id="rec-btn">
+            🚀 Get Recommendations
+          </button>
+          <button class="btn btn-outline" onclick="resetForm()">Reset</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT: Results -->
+    <div>
+      <div id="results-placeholder" class="card" style="min-height:300px;display:flex;align-items:center;justify-content:center">
+        <div class="empty-state">
+          <div class="icon">📲</div>
+          <div style="font-weight:600;margin-bottom:4px">Set your preferences</div>
+          <div style="font-size:13px">Adjust the sliders and click Get Recommendations</div>
+        </div>
+      </div>
+
+      <div id="results" style="display:none">
+        <div class="results-header">
+          <h2>🎯 Top Matches</h2>
+          <span class="results-count" id="results-count"></span>
+        </div>
+        <div id="results-list"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= DATASET PAGE ================= -->
+<div id="page-dataset" class="page">
+  <div class="card">
+    <h2>📊 Full Dataset — {{ stats.total_phones }} Mobile Phones</h2>
+    <div class="table-wrapper">
+      <table id="phones-table">
+        <thead>
+          <tr>
+            <th>ID</th><th>Brand</th><th>Model</th><th>OS</th>
+            <th>Storage (GB)</th><th>RAM (GB)</th><th>Perf (AnTuTu)</th>
+            <th>Camera (MP)</th><th>Selfie (MP)</th><th>Battery (mAh)</th>
+            <th>Screen (in)</th><th>Weight (g)</th><th>Price ($)</th><th>Release</th>
+          </tr>
+        </thead>
+        <tbody id="phones-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ================= ABOUT PAGE ================= -->
+<div id="page-about" class="page">
+  <div class="card">
+    <h2>ℹ️ How It Works</h2>
+    <div style="font-size:14px;line-height:1.8;color:var(--text-muted)">
+      <p style="margin-bottom:1rem">This system uses <strong style="color:var(--text)">Content-Based Filtering</strong> with <strong style="color:var(--text)">Cosine Similarity</strong> to recommend mobile phones based on your preferences.</p>
+      <div style="background:var(--bg);border-radius:var(--radius-sm);padding:1rem;font-family:'DM Mono',monospace;font-size:13px;margin-bottom:1rem">
+        similarity(user, phone) = (A · B) / (|A| × |B|)
+      </div>
+      <p style="margin-bottom:.75rem">Each phone is represented as a normalized feature vector: <code>[storage, RAM, performance, main_camera, selfie_camera, battery, screen_size]</code></p>
+      <p style="margin-bottom:.75rem">Your slider values form a <strong style="color:var(--text)">preference vector</strong>. We compute cosine similarity between your vector and each phone in the filtered (budget + OS) candidate set.</p>
+      <p>A <strong style="color:var(--text)">brand bonus (+5%)</strong> is applied when a phone matches your preferred brand.</p>
+      <hr style="border:none;border-top:1px solid var(--border);margin:1.25rem 0">
+      <p><strong style="color:var(--text)">Dataset:</strong> Kaggle — Cellphones Recommendations (meirnizri) · 33 phones · 13 features</p>
+      <p><strong style="color:var(--text)">Tech stack:</strong> Python · Pandas · scikit-learn · joblib · Flask</p>
+    </div>
+  </div>
+</div>
+
+<script>
+function showPage(name) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-link').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + name).classList.add('active');
+  event.currentTarget.classList.add('active');
+  if (name === 'dataset') loadDataset();
+}
+
+function updateSlider(el, valId) {
+  document.getElementById(valId).textContent = el.value;
+}
+
+function normalize(val) { return parseFloat(val) / 5; }
+
+async function getRecommendations() {
+  const btn = document.getElementById('rec-btn');
+  btn.innerHTML = '<span class="spinner"></span> Finding...';
+  btn.disabled = true;
+
+  const payload = {
+    budget_min:    parseFloat(document.getElementById('budget_min').value) || 0,
+    budget_max:    parseFloat(document.getElementById('budget_max').value) || 9999,
+    os_pref:       document.getElementById('os_pref').value,
+    brand_pref:    document.getElementById('brand_pref').value,
+    top_n:         parseInt(document.getElementById('top_n').value),
+    camera_w:      normalize(document.getElementById('camera_w').value),
+    selfie_w:      normalize(document.getElementById('selfie_w').value),
+    battery_w:     normalize(document.getElementById('battery_w').value),
+    ram_w:         normalize(document.getElementById('ram_w').value),
+    performance_w: normalize(document.getElementById('performance_w').value),
+    storage_w:     normalize(document.getElementById('storage_w').value),
+  };
+
+  try {
+    const res = await fetch('/recommend', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    const data = await res.json();
+    renderResults(data);
+  } catch(e) {
+    alert('Error: ' + e.message);
+  } finally {
+    btn.innerHTML = '🚀 Get Recommendations';
+    btn.disabled = false;
+  }
+}
+
+function renderResults(data) {
+  document.getElementById('results-placeholder').style.display = 'none';
+  const el = document.getElementById('results');
+  const list = document.getElementById('results-list');
+  el.style.display = 'block';
+
+  if (!data.success || !data.results.length) {
+    list.innerHTML = '<div class="empty-state"><div class="icon">🔍</div><div>No phones found for these criteria.</div><div style="font-size:13px;margin-top:4px">Try widening your budget or changing filters.</div></div>';
+    document.getElementById('results-count').textContent = '';
+    return;
+  }
+
+  document.getElementById('results-count').textContent = data.count + ' phone' + (data.count > 1 ? 's' : '') + ' found';
+  list.innerHTML = '';
+
+  data.results.forEach(p => {
+    const rankClass = p.rank <= 3 ? 'rank-' + p.rank : 'rank-n';
+    const scoreColor = p.match_score >= 80 ? '#10b981' : p.match_score >= 60 ? '#f59e0b' : '#6b7280';
+    list.innerHTML += `
+    <div class="phone-card">
+      <div class="rank-badge ${rankClass}">${p.rank}</div>
+      <div class="phone-info">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start">
+          <div>
+            <div class="phone-name">${p.model}</div>
+            <div class="phone-brand">${p.brand} &bull; ${p.os}</div>
+          </div>
+          <div class="price-tag">$${p.price}</div>
+        </div>
+        <div class="spec-pills">
+          <span class="pill highlight">📷 ${p.main_camera}MP</span>
+          <span class="pill highlight">🔋 ${p.battery.toLocaleString()}mAh</span>
+          <span class="pill">💾 ${p.ram}GB RAM</span>
+          <span class="pill">💽 ${p.storage}GB</span>
+          <span class="pill">🤳 ${p.selfie_camera}MP</span>
+          <span class="pill">📐 ${p.screen_size}"</span>
+          <span class="pill">⚡ ${(p.performance/1000).toFixed(0)}K AnTuTu</span>
+        </div>
+        <div class="score-row">
+          <span>Match score</span>
+          <span style="font-weight:600;color:${scoreColor}">${p.match_score}%</span>
+        </div>
+        <div class="score-bar">
+          <div class="score-fill" style="width:${p.match_score}%;background:${scoreColor}"></div>
+        </div>
+      </div>
+    </div>`;
+  });
+}
+
+function resetForm() {
+  document.getElementById('budget_min').value = 100;
+  document.getElementById('budget_max').value = 900;
+  document.getElementById('os_pref').value = 'Any';
+  document.getElementById('brand_pref').value = 'Any';
+  document.getElementById('top_n').value = 5;
+  ['camera_w','selfie_w','battery_w','ram_w','performance_w','storage_w'].forEach(id => {
+    document.getElementById(id).value = 3;
+  });
+  ['camera_val','selfie_val','battery_val','ram_val','perf_val','storage_val'].forEach(id => {
+    document.getElementById(id).textContent = 3;
+  });
+  document.getElementById('results-placeholder').style.display = 'flex';
+  document.getElementById('results').style.display = 'none';
+}
+
+let datasetLoaded = false;
+async function loadDataset() {
+  if (datasetLoaded) return;
+  const res = await fetch('/api/phones');
+  const phones = await res.json();
+  const tbody = document.getElementById('phones-tbody');
+  tbody.innerHTML = '';
+  phones.forEach(p => {
+    const osBadge = p['operating system'] === 'iOS'
+      ? '<span class="os-badge ios">iOS</span>'
+      : '<span class="os-badge android">Android</span>';
+    tbody.innerHTML += `<tr>
+      <td>${p.cellphone_id}</td>
+      <td><strong>${p.brand}</strong></td>
+      <td>${p.model}</td>
+      <td>${osBadge}</td>
+      <td>${p['internal memory']}</td>
+      <td>${p.RAM}</td>
+      <td>${p.performance.toLocaleString()}</td>
+      <td>${p['main camera']}</td>
+      <td>${p['selfie camera']}</td>
+      <td>${p['battery size'].toLocaleString()}</td>
+      <td>${p['screen size']}</td>
+      <td>${p.weight}</td>
+      <td><strong>$${p.price}</strong></td>
+      <td>${p['release date']}</td>
+    </tr>`;
+  });
+  datasetLoaded = true;
+}
+</script>
+</body>
+</html>
